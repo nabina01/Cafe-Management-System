@@ -93,23 +93,5 @@ export const updateReservation = async (req, res) => {
   }
 }
 
-// Cancel reservation
-export const cancelReservation = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const cancelledReservation = await prisma.reservation.update({
-      where: { id: Number(id) },
-      data: { status: "CANCELLED" },
-    });
-
-    res.status(200).json({
-      message: "Reservation cancelled successfully",
-      data: cancelledReservation,
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
 
 
