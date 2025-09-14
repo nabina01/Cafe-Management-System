@@ -1,0 +1,149 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int           @id @default(autoincrement())
+  name           String
+  email          String        @unique
+  password       String
+  profilePicture String?
+  reservations   reservation[]
+   createdAt        DateTime           @default(now())
+  role           Role          @default(USER)
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+model InventoryItem {
+  id            Int       @id @default(autoincrement())
+  name          String
+  category      String
+  currentStock  Int
+  quality          String
+  supplier      String?
+  lastRestocked DateTime?
+  expiryDate    DateTime?
+}
+
+
+model MenuItem {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String?
+  price       Float
+  available   Boolean @default(true)
+  image       String?
+}
+
+model Order {
+  id               Int                @id @default(autoincrement())
+  customerName     String
+  items            Json
+  totalAmount      Float
+  status           OrderStatus        @default(PENDING)
+  paymentStatus    OrderPaymentStatus @default(PENDING)
+  orderPaymentType OrderPaymentType   @default(CASH)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  servedAt         DateTime?
+}
+
+enum OrderStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum OrderPaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum OrderPaymentType {
+  CASH
+  MOBILEBANKING
+  ESEWA
+  KHALTI
+}
+
+model reservation {
+  id              Int               @id @default(autoincrement())
+  customerName    String
+  email           String?
+  phone           String?
+  reservationTime DateTime
+  numberOfPeople  Int
+  tableNumber     Int?
+  specialRequests String?
+  status          ReservationStatus @default(PENDING)
+  reservationId   String            @unique
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  Payment         Payment?
+
+  userId Int?
+  user   User? @relation(fields: [userId], references: [id])
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+model Payment {
+  id            Int           @id @default(autoincrement())
+  amount        Float
+  method        PaymentMethod
+  status        PaymentStatus @default(PENDING)
+  reservationId Int?          @unique
+  transactionId String?       @unique
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  type          PaymentType   @default(INDIVIDUAL)
+
+  reservation reservation? @relation(fields: [reservationId], references: [id])
+}
+
+enum PaymentType {
+  RESERVATION
+  INDIVIDUAL
+}
+
+enum PaymentMethod {
+  CASH
+  ESEWA
+  KHALTI
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+//payment reservation 
+//individual payment
+
+//table payment or reservation payment
+//catrgor
