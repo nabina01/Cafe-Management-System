@@ -1,4 +1,5 @@
 import prisma from "../utils/prisma-client.js"
+import { successResponse, errorResponse } from "../utils/json.js"
 
 // GET /api/activity-logs
 export const getActivityLogs = async (req, res) => {

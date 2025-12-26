@@ -1,19 +1,25 @@
 import express from "express"
-import  auth  from "../Middlewares/auth.js"
-import  isAdmin  from "../Middlewares/admin.js"
-import { createUser, loginUser, getCurrentUser, getAllUsers, deleteUser } from "../Controllers/user-controller.js"
+import auth from "../middlewares/auth.js"
+import isAdmin from "../middlewares/admin.js"
+import { createUser, loginUser, getCurrentUser, getAllUsers, deleteUser, updateUserRole, refreshAccessToken, logout, requestPasswordReset, confirmPasswordReset } from "../controllers/user-controller.js"
 
 const router = express.Router()
 
-// Public
-router.post("/", createUser)         // register
+// Public registration
+router.post("/register", createUser) // public register (no role assignment)
 router.post("/login", loginUser)     // login
+router.post("/token", refreshAccessToken)
+router.post("/logout", logout)
+router.post("/password-reset/request", requestPasswordReset)
+router.post("/password-reset/confirm", confirmPasswordReset)
 
 // Protected (authenticated)
-router.get("/me", auth, getCurrentUser)
+router.get("/currentuser", auth, getCurrentUser)
 
-// Admin only
+// Admin-only user management
+router.post("/", auth, isAdmin, createUser) // create users with role (admin only)
 router.get("/", auth, isAdmin, getAllUsers)
 router.delete("/:id", auth, isAdmin, deleteUser)
+router.put("/:id/role", auth, isAdmin, updateUserRole)
 
 export default router

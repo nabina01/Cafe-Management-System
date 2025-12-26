@@ -10,7 +10,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  
 }
 
 model User {
@@ -23,12 +23,15 @@ model User {
   createdAt      DateTime      @default(now())
   role           Role          @default(USER)
 
+  refreshTokens  RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
   ActivityLog ActivityLog[]
 }
 
 enum Role {
   ADMIN
   USER
+  STAFF
 }
 
 model InventoryItem {
@@ -189,5 +192,25 @@ model ActivityLog {
   createdAt DateTime @default(now())
 
   user User? @relation(fields: [userId], references: [id])
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  user      User?     @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  user      User?     @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
 
