@@ -2,9 +2,9 @@ import prisma from "../utils/prisma-client.js"
 import { successResponse, errorResponse } from "../utils/json.js"
 import { startOfDay, endOfDay, parseISO } from "date-fns"
 
-export const getDashboardStats = async (req, res) => {
+export const getDashboardStatus = async (req, res) => {
   try {
-    const today = new Date()
+    const today = new Date();
 
     const [
       totalOrders,
@@ -32,10 +32,10 @@ export const getDashboardStats = async (req, res) => {
       prisma.reservation.count({
         where: { createdAt: { gte: startOfDay(today), lte: endOfDay(today) } }
       }),
-      prisma.menuItem.count({ where: { currentStock: { lt: 5 } } }),
+      prisma.inventoryItem.count({ where: { currentStock: { lt: 5 } } }), // fixed
       prisma.menuItem.count(),
-      prisma.menuItem.count({ where: { isActive: true } })
-    ])
+      prisma.menuItem.count({ where: { available: true } }) // fixed
+    ]);
 
     successResponse(res, {
       totalOrders,
@@ -48,11 +48,12 @@ export const getDashboardStats = async (req, res) => {
       lowStockItems,
       totalMenuItems,
       activeMenuItems
-    })
+    });
   } catch (error) {
-    errorResponse(res, error.message)
+    errorResponse(res, error.message);
   }
-}
+};
+
 
 
 export const getRevenueReport = async (req, res) => {
@@ -96,30 +97,33 @@ export const getRevenueReport = async (req, res) => {
 
 export const getPopularItems = async (req, res) => {
   try {
-    const { limit = 10 } = req.query
+    const { limit = 10 } = req.query;
 
-    const items = await prisma.orderItem.groupBy({
-      by: ["menuItemId"],
-      _count: { menuItemId: true },
-      orderBy: { _count: { menuItemId: "desc" } },
-      take: Number(limit)
-    })
+    const orders = await prisma.order.findMany({
+      select: { items: true }
+    });
 
-    const popularItems = await Promise.all(
-      items.map(async (i) => {
-        const menuItem = await prisma.menuItem.findUnique({
-          where: { id: i.menuItemId },
-          select: { id: true, name: true, price: true, image: true }
-        })
-        return { ...menuItem, orderCount: i._count.menuItemId }
-      })
-    )
+    const itemCounts = {};
 
-    successResponse(res, { data: popularItems })
+    orders.forEach(order => {
+      const items = order.items || [];
+      items.forEach(i => {
+        const name = i.name || i.menuItemId;
+        itemCounts[name] = (itemCounts[name] || 0) + (i.quantity || 1);
+      });
+    });
+
+    const popularItems = Object.entries(itemCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, Number(limit))
+      .map(([name, count]) => ({ name, orderCount: count }));
+
+    successResponse(res, { data: popularItems });
   } catch (error) {
-    errorResponse(res, error.message)
+    errorResponse(res, error.message);
   }
-}
+};
+
 
 export const getOrderTrends = async (req, res) => {
   try {

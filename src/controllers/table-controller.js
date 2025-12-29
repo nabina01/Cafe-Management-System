@@ -2,70 +2,6 @@ import prisma from "../utils/prisma-client.js"
 import { successResponse, errorResponse } from "../utils/json.js"
 import { parseISO, startOfHour, endOfHour } from "date-fns"
 
-// Create Table
-export const createTable = async (req, res) => {
-  try {
-    const { tableNumber, capacity, location } = req.body
-    if (!tableNumber || !capacity) {
-      return res.status(400).json({ message: "Table number and capacity required" })
-    }
-
-    const table = await prisma.table.create({
-      data: { tableNumber, capacity, location }
-    })
-    successResponse(res, { message: "Table created successfully", data: table })
-  } catch (error) {
-    errorResponse(res, error.message)
-  }
-}
-
-// Get All Tables with optional status filter
-export const getAllTables = async (req, res) => {
-  try {
-    const { status } = req.query
-    const where = status ? { status } : {}
-    const tables = await prisma.table.findMany({ where, orderBy: { tableNumber: "asc" } })
-    successResponse(res, { data: tables })
-  } catch (error) {
-    errorResponse(res, error.message)
-  }
-}
-
-// Get Table by ID
-export const getTableById = async (req, res) => {
-  try {
-    const { id } = req.params
-    const table = await prisma.table.findUnique({ where: { id: Number(id) } })
-    if (!table) return errorResponse(res, "Table not found")
-    successResponse(res, { data: table })
-  } catch (error) {
-    errorResponse(res, error.message)
-  }
-}
-
-// Update Table
-export const updateTable = async (req, res) => {
-  try {
-    const { id } = req.params
-    const data = req.body
-    const updatedTable = await prisma.table.update({ where: { id: Number(id) }, data })
-    successResponse(res, { message: "Table updated successfully", data: updatedTable })
-  } catch (error) {
-    errorResponse(res, error.message)
-  }
-}
-
-// Delete Table
-export const deleteTable = async (req, res) => {
-  try {
-    const { id } = req.params
-    await prisma.table.delete({ where: { id: Number(id) } })
-    successResponse(res, { message: "Table deleted successfully" })
-  } catch (error) {
-    errorResponse(res, error.message)
-  }
-}
-
 // Get Available Tables
 export const getAvailableTables = async (req, res) => {
   try {
@@ -100,4 +36,28 @@ export const getAvailableTables = async (req, res) => {
   } catch (error) {
     errorResponse(res, error.message)
   }
+};
+
+// Update Table
+export const updateTable = async (req, res) => {
+  try {
+    const { id } = req.params
+    const data = req.body
+    const updatedTable = await prisma.table.update({ where: { id: Number(id) }, data })
+    successResponse(res, { message: "Table updated successfully", data: updatedTable })
+  } catch (error) {
+    errorResponse(res, error.message)
+  }
 }
+
+// Delete Table
+export const deleteTable = async (req, res) => {
+  try {
+    const { id } = req.params
+    await prisma.table.delete({ where: { id: Number(id) } })
+    successResponse(res, { message: "Table deleted successfully" })
+  } catch (error) {
+    errorResponse(res, error.message)
+  }
+}
+

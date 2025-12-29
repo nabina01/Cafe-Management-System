@@ -69,7 +69,7 @@ export const getReservationReport = async (req, res) => {
     const end = endDate ? parseISO(endDate) : new Date()
 
     const reservations = await prisma.reservation.findMany({
-      where: { dateTime: { gte: start, lte: end } }
+      where: { reservationTime: { gte: start, lte: end } }
     })
 
     const totalReservations = reservations.length
@@ -77,7 +77,7 @@ export const getReservationReport = async (req, res) => {
     const cancelled = reservations.filter(r => r.status === "CANCELLED").length
     const completed = reservations.filter(r => r.status === "COMPLETED").length
     const averagePartySize = reservations.length
-      ? reservations.reduce((sum, r) => sum + (r.partySize || 1), 0) / reservations.length
+      ? reservations.reduce((sum, r) => sum + (r.numberOfPeople || 1), 0) / reservations.length
       : 0
 
     successResponse(res, {
@@ -93,3 +93,4 @@ export const getReservationReport = async (req, res) => {
     errorResponse(res, error.message)
   }
 }
+

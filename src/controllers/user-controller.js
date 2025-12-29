@@ -32,7 +32,6 @@ export const createUser = async (req, res) => {
 
       finalRole = upper
     }
-
     const hashedPassword = await bcrypt.hash(password, 10)
     const newUser = await prisma.user.create({
       data: { name, email, password: hashedPassword, role: finalRole },
@@ -41,76 +40,59 @@ export const createUser = async (req, res) => {
 
     successResponse(res, newUser, "User registered successfully")
   } catch (error) {
-     errorResponse(res, error.message)
+    errorResponse(res, error.message)
   }
 }
 
 // Login user
 export const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body
-    if (!email || !password) return errorResponse(res, "Email and password are required", 400)
+    const { email, password } = req.body;
+    if (!email || !password) return errorResponse(res, "Email and password are required", 400);
 
-    const user = await prisma.user.findUnique({ where: { email } })
-    if (!user) return errorResponse(res, "Invalid credentials", 401)
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        password: true,
+        createdAt: true
+      }
+    });
 
-    const isMatch = await bcrypt.compare(password, user.password)
-    if (!isMatch) return errorResponse(res, "Invalid credentials", 401)
+    if (!user) return errorResponse(res, "Invalid email or password", 400);
 
-    const accessToken = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES || "15m" })
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return errorResponse(res, "Invalid email or password", 400);
 
-    // create refresh token and persist
-    const refreshTokenValue = crypto.randomBytes(40).toString('hex')
-    const refreshExpires = addHours(new Date(), Number(process.env.REFRESH_TOKEN_EXPIRES_HOURS || 24 * 7))
-    await prisma.refreshToken.create({ data: { token: refreshTokenValue, userId: user.id, expiresAt: refreshExpires } })
+    const accessToken = jwt.sign(
+      { id: user.id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES || "15m" }
+    );
 
-    // Exclude password
     const safeUser = {
       id: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
       createdAt: user.createdAt
-    }
+    };
 
-    successResponse(res, { user: safeUser, accessToken, refreshToken: refreshTokenValue }, "Login successful")
+    successResponse(res, { user: safeUser, accessToken }, "Login successful");
   } catch (error) {
-    errorResponse(res, error.message)
+    errorResponse(res, error.message);
   }
-}
+};
 
-// Refresh access token
-export const refreshAccessToken = async (req, res) => {
-  try {
-    const { refreshToken } = req.body
-    if (!refreshToken) return errorResponse(res, "refreshToken is required", 400)
 
-    const stored = await prisma.refreshToken.findUnique({ where: { token: refreshToken }, include: { user: true } })
-    if (!stored || stored.revoked) return errorResponse(res, "Invalid refresh token", 401)
-    if (new Date() > stored.expiresAt) return errorResponse(res, "Refresh token expired", 401)
 
-    // rotate: revoke old and issue new
-    await prisma.refreshToken.update({ where: { id: stored.id }, data: { revoked: true } })
-
-    const newTokenValue = crypto.randomBytes(40).toString('hex')
-    const refreshExpires = addHours(new Date(), Number(process.env.REFRESH_TOKEN_EXPIRES_HOURS || 24 * 7))
-    await prisma.refreshToken.create({ data: { token: newTokenValue, userId: stored.userId, expiresAt: refreshExpires } })
-
-    const accessToken = jwt.sign({ id: stored.user.id, role: stored.user.role }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES || "15m" })
-
-    successResponse(res, { accessToken, refreshToken: newTokenValue })
-  } catch (error) {
-    errorResponse(res, error.message)
-  }
-}
-
-// Logout (revoke refresh token)
+// Logout 
 export const logout = async (req, res) => {
   try {
-    const { refreshToken } = req.body
-    if (!refreshToken) return errorResponse(res, "refreshToken is required", 400)
 
-    await prisma.refreshToken.updateMany({ where: { token: refreshToken }, data: { revoked: true } })
     successResponse(res, {}, "Logged out")
   } catch (error) {
     errorResponse(res, error.message)
@@ -137,51 +119,30 @@ export const requestPasswordReset = async (req, res) => {
   }
 }
 
-// Confirm password reset
-export const confirmPasswordReset = async (req, res) => {
-  try {
-    const { token, newPassword } = req.body
-    if (!token || !newPassword) return errorResponse(res, "Token and newPassword are required", 400)
-
-    const record = await prisma.passwordResetToken.findUnique({ where: { token }, include: { user: true } })
-    if (!record) return errorResponse(res, "Invalid token", 400)
-    if (record.used) return errorResponse(res, "Token already used", 400)
-    if (new Date() > record.expiresAt) return errorResponse(res, "Token expired", 400)
-
-    const hashed = await bcrypt.hash(newPassword, 10)
-    await prisma.user.update({ where: { id: record.userId }, data: { password: hashed } })
-    await prisma.passwordResetToken.update({ where: { id: record.id }, data: { used: true } })
-
-    successResponse(res, {}, "Password reset successfully")
-  } catch (error) {
-    errorResponse(res, error.message)
-  }
-}
-
-// Get current logged-in user
-export const getCurrentUser = async (req, res) => {
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: Number(req.user.id) },
-      select: { id: true, name: true, email: true, role: true, createdAt: true }
-    })
-    if (!user) return errorResponse(res, "User not found", 404)
-
-     successResponse(res, user)
-  } catch (error) {
-     errorResponse(res, error.message)
-  }
-}
-
 // Get all users (Admin only)
 export const getAllUsers = async (req, res) => {
   try {
     const users = await prisma.user.findMany({
       select: { id: true, name: true, email: true, role: true, createdAt: true }
     })
-     successResponse(res, users)
+    successResponse(res, users)
   } catch (error) {
-     errorResponse(res, error.message)
+    errorResponse(res, error.message)
+  }
+}
+
+// Get user by ID (Admin only)
+export const getUserById = async (req, res) => {
+  try {
+    const { id } = req.params
+    const user = await prisma.user.findUnique({
+      where: { id: Number(id) },
+      select: { id: true, name: true, email: true, role: true, createdAt: true }
+    })
+    if (!user) return errorResponse(res, "User not found", 404)
+    successResponse(res, user)
+  } catch (error) {
+    errorResponse(res, error.message)
   }
 }
 
@@ -190,49 +151,27 @@ export const deleteUser = async (req, res) => {
   try {
     const { id } = req.params
     await prisma.user.delete({ where: { id: Number(id) } })
-     successResponse(res, {}, "User deleted successfully")
-  } catch (error) {
-   errorResponse(res, error.message)
-  }
-}
-
-// Update current user
-export const updateCurrentUser = async (req, res) => {
-  try {
-    const { name, email, password } = req.body
-    const data = {}
-    if (name) data.name = name
-    if (email) data.email = email
-    if (password) data.password = await bcrypt.hash(password, 10)
-
-    const updatedUser = await prisma.user.update({
-      where: { id: Number(req.user.id) },
-      data,
-      select: { id: true, name: true, email: true, role: true, createdAt: true }
-    })
-
-    successResponse(res, updatedUser, "Profile updated successfully")
+    successResponse(res, {}, "User deleted successfully")
   } catch (error) {
     errorResponse(res, error.message)
   }
 }
 
-// Change password
-export const changePassword = async (req, res) => {
+//Update user by ID 
+export const updateUser = async (req, res) => {
   try {
-    const { oldPassword, newPassword } = req.body
-    if (!oldPassword || !newPassword) return errorResponse(res, "Old and new password are required", 400)
+    const { id } = req.params
+    const data = req.body
+    if (!data || Object.keys(data).length === 0) {
+      return errorResponse(res, "No data provided to update", 400)
+    }
+    const updatedUser = await prisma.user.update({
+      where: { id: Number(id) },
+      data,
+      select: { id: true, name: true, email: true, role: true, createdAt: true }
+    })
 
-    const user = await prisma.user.findUnique({ where: { id: Number(req.user.id) } })
-    if (!user) return errorResponse(res, "User not found", 404)
-
-    const isMatch = await bcrypt.compare(oldPassword, user.password)
-    if (!isMatch) return errorResponse(res, "Old password is incorrect", 400)
-
-    const hashedPassword = await bcrypt.hash(newPassword, 10)
-    await prisma.user.update({ where: { id: user.id }, data: { password: hashedPassword } })
-
-     successResponse(res, {}, "Password changed successfully")
+    successResponse(res, updatedUser, "User updated successfully")
   } catch (error) {
     errorResponse(res, error.message)
   }
@@ -241,22 +180,67 @@ export const changePassword = async (req, res) => {
 // Admin-only: update a user's role
 export const updateUserRole = async (req, res) => {
   try {
-    const { id } = req.params
-    const { role } = req.body
+    const { id } = req.params;
+    const { role } = req.body;
 
-    if (!role) return errorResponse(res, "Role is required", 400)
+    // Check role is provided
+    if (!role) return errorResponse(res, "Role is required", 400);
 
-    const upper = String(role).toUpperCase()
-    if (!ALLOWED_ROLES.includes(upper)) return errorResponse(res, "Invalid role", 400)
+    // Normalize + validate role
+    const upper = String(role).toUpperCase();
+    if (!ALLOWED_ROLES.includes(upper)) {
+      return errorResponse(res, "Invalid role", 400);
+    }
 
+    // Update role
     const updated = await prisma.user.update({
       where: { id: Number(id) },
       data: { role: upper },
       select: { id: true, name: true, email: true, role: true, createdAt: true }
-    })
+    });
 
-    successResponse(res, updated, "User role updated successfully")
+    successResponse(res, updated, "User role updated successfully");
   } catch (error) {
-    errorResponse(res, error.message)
+    errorResponse(res, error.message);
   }
-}
+};
+
+// Change password
+export const changePassword = async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    if (!oldPassword || !newPassword) {
+      return errorResponse(res, "Old and new password are required", 400);
+    }
+
+    const userId = req.user.id; // If schema id is Int, use Number(req.user.id)
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return errorResponse(res, "User not found", 404);
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) return errorResponse(res, "Old password is incorrect", 400);
+
+    const isSameAsOld = await bcrypt.compare(newPassword, user.password);
+    if (isSameAsOld) return errorResponse(res, "New password cannot be same as old password", 400);
+
+    // ✅ Hash and update only password field
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+      },
+    });
+
+    successResponse(res, updatedUser, "Password changed successfully");
+
+  } catch (error) {
+    errorResponse(res, error.message, 500);
+  }
+};

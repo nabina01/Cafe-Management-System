@@ -1,6 +1,6 @@
 import express from "express"
 import {
-  getDashboardStats,
+  getDashboardStatus,
   getRevenueReport,
   getPopularItems,
   getOrderTrends
@@ -10,7 +10,7 @@ import  isAdmin  from "../middlewares/admin.js"
 
 const router = express.Router()
 
-router.get("/stats", auth, isAdmin, getDashboardStats)
+router.get("/status", auth, isAdmin, getDashboardStatus)
 router.get("/revenue", auth, isAdmin, getRevenueReport)
 router.get("/popular-items", auth, isAdmin, getPopularItems)
 router.get("/order-trends", auth, isAdmin, getOrderTrends)
