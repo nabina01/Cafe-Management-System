@@ -141,3 +141,43 @@ export const getOrderTrends = async (req, res) => {
     errorResponse(res, error.message)
   }
 }
+
+export const getDashboardCounts = async (req, res) => {
+  try {
+    const { fromDate, toDate } = req.query;
+
+    // Parse dates if provided, else default to all time
+    const start = fromDate ? startOfDay(parseISO(fromDate)) : undefined;
+    const end = toDate ? endOfDay(parseISO(toDate)) : undefined;
+
+    const dateFilter = start && end ? { gte: start, lte: end } : undefined;
+
+    const [
+      totalCustomers,
+      totalOrders,
+      totalRevenue,
+      totalReservations
+    ] = await Promise.all([
+      prisma.user.count(), // total customers
+      prisma.order.count({
+        where: dateFilter ? { createdAt: dateFilter } : undefined
+      }),
+      prisma.order.aggregate({
+        _sum: { totalAmount: true },
+        where: dateFilter ? { createdAt: dateFilter } : undefined
+      }),
+      prisma.reservation.count({
+        where: dateFilter ? { createdAt: dateFilter } : undefined
+      })
+    ]);
+
+    successResponse(res, {
+      totalCustomers,
+      totalOrders,
+      totalIncome: totalRevenue._sum.totalAmount || 0,
+      totalReservations
+    });
+  } catch (error) {
+    errorResponse(res, error.message);
+  }
+};

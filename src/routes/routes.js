@@ -11,6 +11,7 @@ import reportRoutes from "../Routes/report.routes.js";
 import searchRoutes from "../Routes/search.routes.js";
 import categoryRoutes from "../Routes/category.routes.js";
 import tableRoutes from "../routes/table.routes.js";
+import activityLogRoutes from "../routes/activity-log.routes.js";
 
 const router = Router();
 
@@ -26,4 +27,5 @@ router.use("/tables", tableRoutes);
 router.use("/reports", reportRoutes);
 router.use("/search", searchRoutes);
 router.use("/categories", categoryRoutes);
+router.use("/activity-logs", activityLogRoutes);
 export default router;

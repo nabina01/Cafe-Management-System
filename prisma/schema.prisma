@@ -174,7 +174,6 @@ model Payment {
 enum PaymentMethod {
   CASH
   ESEWA
-  KHALTI
 }
 
 enum PaymentStatus {

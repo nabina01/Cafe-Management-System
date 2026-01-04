@@ -1,27 +1,10 @@
-import express from "express"
-import {
-  createPayment,
-  getAllPayments,
-  getPaymentById,
-  updatePaymentStatus,
-  getPaymentByReservation,
-  createStripePaymentIntent,
-  stripeWebhook
-} from "../controllers/payment-controller.js"
-import auth from "../middlewares/auth.js"
-import isAdmin from "../middlewares/admin.js"
-import validatePayment from "../middlewares/validate-payment.js"
+import express from "express";
+import {initiatePayment,paymentStatus,} from "../controllers/payment-controller.js";
 
-const router = express.Router()
+const router = express.Router();
 
-router.post("/", auth, validatePayment, createPayment)
+router.post("/initiate-payment", initiatePayment);
 
-router.post("/intent", auth, createStripePaymentIntent)
+router.post("/payment-status", paymentStatus);
 
-router.post("/webhook", express.raw({ type: 'application/json' }), stripeWebhook)
-router.get("/", getAllPayments)
-router.get("/:id", getPaymentById)
-router.put("/:id", auth, isAdmin, updatePaymentStatus)
-router.get("/reservation/:reservationId", getPaymentByReservation)
-
-export default router
+export default router;

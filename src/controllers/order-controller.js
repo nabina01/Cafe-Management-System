@@ -17,7 +17,7 @@ export const createOrder = async (req, res) => {
         totalAmount,
         status: "PENDING",
         paymentStatus: "PENDING",
-        orderPaymentType: orderPaymentType || "CASH"
+        orderPaymentType: orderPaymentType || "CASH",
       }
     })
 
@@ -59,27 +59,62 @@ export const getOrderById = async (req, res) => {
   }
 };
 
-
-// Update order 
+//update order
 export const updateOrder = async (req, res) => {
   try {
     const { id } = req.params;
-    const data = req.body; 
 
-    if (!data || Object.keys(data).length === 0) {
-      return res.status(400).json({ message: "No data provided to update" });
+    const {
+      status,
+      paymentStatus,
+      orderPaymentType,
+      customerName,
+      items,
+      totalAmount,
+      servedAt
+    } = req.body;
+
+    const data = {};
+
+    if (status) data.status = status;
+    if (paymentStatus) data.paymentStatus = paymentStatus;
+    if (orderPaymentType) data.orderPaymentType = orderPaymentType;
+    if (customerName) data.customerName = customerName;
+    if (items) data.items = items;
+    if (totalAmount) data.totalAmount = totalAmount;
+    if (servedAt) data.servedAt = new Date(servedAt);
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({ message: "No valid fields provided to update" });
+    }
+
+    const order = await prisma.order.findUnique({
+      where: { id: Number(id) }
+    });
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
     }
 
     const updatedOrder = await prisma.order.update({
       where: { id: Number(id) },
-      data, 
+      data
     });
 
-    successResponse(res, { message: "Order updated successfully", data: updatedOrder });
+    return res.status(200).json({
+      message: "Order updated successfully",
+      data: updatedOrder
+    });
+
   } catch (error) {
-    errorResponse(res, error.message);
+    console.error(error);
+    return res.status(500).json({
+      message: "Failed to update order",
+      error: error.message
+    });
   }
 };
+
 
 
 // Delete order
