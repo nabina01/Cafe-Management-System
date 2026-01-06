@@ -5,12 +5,14 @@ import  isAdmin  from "../middlewares/admin.js"
 
 const router = Router()
 
-router.get("/", getAllMenuItems)                    // public
-router.get("/:id", getMenuItemById)               // public
+// Public routes - anyone can view menu
+router.get("/", getAllMenuItems)                   
+router.get("/:id", getMenuItemById)               
 
-router.post("/", auth, isAdmin, createMenuItem)   // admin
-router.put("/:id", auth, isAdmin, updateMenuItem) // admin
-router.delete("/:id", auth, isAdmin, deleteMenuItem) // admin
+// Admin only routes - only admins can manage menu
+router.post("/", auth, isAdmin, createMenuItem)   
+router.put("/:id", auth, isAdmin, updateMenuItem) 
+router.delete("/:id", auth, isAdmin, deleteMenuItem) 
 
 
 export default router

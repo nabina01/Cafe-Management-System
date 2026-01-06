@@ -1,6 +1,11 @@
 import express from "express";
 import { createCart, getAllCarts, getCartById, updateCart, deleteCart, } from "../Controllers/cart-controller.js";
+import  auth from '../middlewares/auth.js';
+
 const router = express.Router();
+
+// All cart routes require authentication
+router.use(auth);
 
 router.post("/",  createCart)
 router.get("/",  getAllCarts)

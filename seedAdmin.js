@@ -1,4 +1,4 @@
-import prisma from "./src/utils/prisma-client.js"; // make sure this path is correct
+import prisma from "./src/utils/prisma-client.js"; 
 import bcrypt from "bcryptjs";
 
 async function main() {
@@ -11,13 +11,13 @@ async function main() {
     return;
   }
 
-  const hashed = await bcrypt.hash("admin123", 10); // hash password
+  const hashed = await bcrypt.hash("admin123", 10); 
 
   await prisma.user.create({
     data: {
       name: "Nabina Dahal",
       email: email,
-      password: hashed,       // <-- use hashed password here
+      password: hashed,       
       role: "ADMIN"
     }
   });

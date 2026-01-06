@@ -25,7 +25,7 @@ export const createReservation = async (req, res) => {
         specialRequests,
         status: "PENDING",
         reservationId: uuidv4(),
-        userId: userId || null
+       userId: req.user.id,
       }
     })
 
@@ -100,6 +100,23 @@ export const updateReservation = async (req, res) => {
     successResponse(res, { message: "Reservation deleted successfully" });
   } catch (error) {
     errorResponse(res, error.message);
+  }
+};
+
+export const getReservationByUserId = async (req, res) => {
+  try {
+    const { userId } = req.params
+    const reservation = await prisma.reservation.findMany({
+      where: { userId: Number(userId) }
+    })
+console.log("Reservation fetched for userId:", userId, reservation);
+    if (!reservation) {
+      return res.status(404).json({ message: "Reservation not found" })
+    }
+
+    successResponse(res, { data: reservation })
+  } catch (error) {
+    errorResponse(res, error.message)
   }
 };
 

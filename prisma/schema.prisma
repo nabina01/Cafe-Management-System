@@ -23,15 +23,13 @@ model User {
   createdAt      DateTime      @default(now())
   role           Role          @default(USER)
 
-
   passwordResetTokens PasswordResetToken[]
-  ActivityLog ActivityLog[]
 }
 
 enum Role {
   ADMIN
   USER
-  STAFF
+  
 }
 
 model InventoryItem {
@@ -50,9 +48,9 @@ model InventoryItem {
 enum InventoryCategory {
   BEVERAGE
   FOOD
+  MACHINES
   UTENSILS
   CLEANING
-  OTHER
 }
 
 model MenuItem {
@@ -65,20 +63,19 @@ model MenuItem {
 }
 
 enum MenuCategory {
-  APPETIZER
-  MAIN_COURSE
-  DESSERT
+  COFFEE   
+  TEA
+  PASTRY
   BEVERAGE
-  SNACK
 }
 
 model Cart {
-  id         Int      @id @default(autoincrement())
-  userId     Int
-  items      Json
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  items       Json
   totalAmount Float
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Order {
@@ -110,8 +107,6 @@ enum OrderPaymentStatus {
 
 enum OrderPaymentType {
   CASH
-  MOBILEBANKING
-  ESEWA
   KHALTI
 }
 
@@ -160,20 +155,23 @@ enum TableStatus {
 }
 
 model Payment {
-  id            Int           @id @default(autoincrement())
-  amount        Float
-  method        PaymentMethod
-  status        PaymentStatus @default(PENDING)
-  reservationId Int?          @unique
-  transactionId String?       @unique
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id              Int           @id @default(autoincrement())
+  amount          Float
+  method          PaymentMethod
+  status          PaymentStatus @default(PENDING)
+  reservationId   Int?          @unique
+  transactionId   String?       @unique
+  transactionUuid String?       @unique
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   reservation Reservation? @relation(fields: [reservationId], references: [id])
 }
+
 enum PaymentMethod {
   CASH
   ESEWA
+  KHALTI
 }
 
 enum PaymentStatus {
@@ -183,26 +181,12 @@ enum PaymentStatus {
   REFUNDED
 }
 
-model ActivityLog {
-  id        Int      @id @default(autoincrement())
-  userId    Int?
-  action    String   // e.g., "ORDER_CREATED", "RESERVATION_CONFIRMED"
-  entity    String   // e.g., "Order", "Reservation"
-  entityId  Int?
-  details   String?
-  createdAt DateTime @default(now())
-
-  user User? @relation(fields: [userId], references: [id])
-}
-
-
 model PasswordResetToken {
   id        Int      @id @default(autoincrement())
   token     String   @unique
   userId    Int
-  user      User?     @relation(fields: [userId], references: [id])
+  user      User?    @relation(fields: [userId], references: [id])
   expiresAt DateTime
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
 }
-

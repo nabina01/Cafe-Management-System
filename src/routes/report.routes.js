@@ -4,6 +4,11 @@ import  auth  from "../middlewares/auth.js"
 import  isAdmin from "../middlewares/admin.js"
 
 const router = express.Router()
+
+// All report routes require admin authentication
+router.use(auth, isAdmin);
+
 router.get("/allreport",  getReports)
+
 
 export default router

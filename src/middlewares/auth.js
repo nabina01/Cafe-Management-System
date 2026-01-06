@@ -4,7 +4,7 @@ import prisma from "../utils/prisma-client.js"
 const auth = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (!authHeader || !authHeader.startsWith("Bearer")) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
