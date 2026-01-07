@@ -18,11 +18,12 @@ model User {
   name           String
   email          String        @unique
   password       String
+  phoneNumber    String?       
   profilePicture String?
-  reservations   Reservation[]
+  
   createdAt      DateTime      @default(now())
   role           Role          @default(USER)
-
+  reservations   Reservation[]
   passwordResetTokens PasswordResetToken[]
 }
 

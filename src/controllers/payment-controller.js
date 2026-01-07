@@ -13,7 +13,7 @@ export const initiatePayment = async (req, res) => {
   } = req.body;
 
   try {
-    // 💵 Cash Payment
+    //  Cash Payment
     if (paymentGateway === "cash") {
       const payment = await prisma.payment.create({
         data: {
@@ -27,44 +27,6 @@ export const initiatePayment = async (req, res) => {
       return res.status(200).json({
         message: "Cash payment completed",
         payment,
-      });
-    }
-
-    // 🌐 ESEWA
-    if (paymentGateway === "esewa") {
-      const transactionUuid = `TXN-${Date.now()}`;
-
-      await prisma.payment.create({
-        data: {
-          amount,
-          method: "ESEWA",
-          status: "PENDING",
-          reservationId,
-          transactionUuid,
-        },
-      });
-
-      const paymentData = {
-        amount,
-        total_amount: amount,
-        transaction_uuid: transactionUuid,
-        product_code: process.env.ESEWA_MERCHANT_ID,
-        success_url: process.env.SUCCESS_URL,
-        failure_url: process.env.FAILURE_URL,
-        tax_amount: "0",
-        product_service_charge: "0",
-        product_delivery_charge: "0",
-        signed_field_names: "total_amount,transaction_uuid,product_code",
-      };
-
-      const data = `total_amount=${paymentData.total_amount},transaction_uuid=${transactionUuid},product_code=${paymentData.product_code}`;
-      const signature = generateHmacSha256Hash(data, process.env.ESEWA_SECRET);
-
-      return res.json({
-        url: `${process.env.ESEWA_PAYMENT_URL}?${new URLSearchParams({
-          ...paymentData,
-          signature,
-        })}`,
       });
     }
 
@@ -145,8 +107,7 @@ export const verifyKhaltiPayment = async (req, res) => {
   const { token, amount, transactionUuid } = req.body;
 
   try {
-    // For now, we're not verifying with Khalti API
-    // Just update the payment status to COMPLETED
+  
     const payment = await prisma.payment.findUnique({
       where: { transactionUuid },
     });

@@ -10,9 +10,9 @@ const ALLOWED_ROLES = ["USER", "STAFF", "ADMIN"]
 
 export const createUser = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body
+    const { name, email, password, role, phoneNumber } = req.body
 
-    if (!name || !email || !password) return errorResponse(res, "All fields are required", 400)
+    if (!name || !email || !password || !phoneNumber) return errorResponse(res, "All fields are required", 400)
 
     const existing = await prisma.user.findUnique({ where: { email } })
     if (existing) return errorResponse(res, "Email already exists", 400)
@@ -34,8 +34,8 @@ export const createUser = async (req, res) => {
     }
     const hashedPassword = await bcrypt.hash(password, 10)
     const newUser = await prisma.user.create({
-      data: { name, email, password: hashedPassword, role: finalRole },
-      select: { id: true, name: true, email: true, role: true, createdAt: true }
+      data: { name, email, password: hashedPassword, role: finalRole, phoneNumber },
+      select: { id: true, name: true, email: true, phoneNumber: true, role: true, createdAt: true }
     })
 
     successResponse(res, newUser, "User registered successfully")
@@ -123,7 +123,7 @@ export const requestPasswordReset = async (req, res) => {
 export const getAllUsers = async (req, res) => {
   try {
     const users = await prisma.user.findMany({
-      select: { id: true, name: true, email: true, role: true, createdAt: true }
+      select: { id: true, name: true, email: true, phoneNumber: true, role: true, createdAt: true }
     })
     successResponse(res, users)
   } catch (error) {
@@ -137,7 +137,7 @@ export const getUserById = async (req, res) => {
     const { id } = req.params
     const user = await prisma.user.findUnique({
       where: { id: Number(id) },
-      select: { id: true, name: true, email: true, role: true, createdAt: true }
+      select: { id: true, name: true, email: true, phoneNumber: true, role: true, createdAt: true }
     })
     if (!user) return errorResponse(res, "User not found", 404)
     successResponse(res, user)
@@ -168,7 +168,7 @@ export const updateUser = async (req, res) => {
     const updatedUser = await prisma.user.update({
       where: { id: Number(id) },
       data,
-      select: { id: true, name: true, email: true, role: true, createdAt: true }
+      select: { id: true, name: true, email: true, phoneNumber: true, role: true, createdAt: true }
     })
 
     successResponse(res, updatedUser, "User updated successfully")
@@ -196,7 +196,7 @@ export const updateUserRole = async (req, res) => {
     const updated = await prisma.user.update({
       where: { id: Number(id) },
       data: { role: upper },
-      select: { id: true, name: true, email: true, role: true, createdAt: true }
+      select: { id: true, name: true, email: true, phoneNumber: true, role: true, createdAt: true }
     });
 
     successResponse(res, updated, "User role updated successfully");
