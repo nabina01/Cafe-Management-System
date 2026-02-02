@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -30,7 +24,7 @@ model User {
 enum Role {
   ADMIN
   USER
-  
+  STAFF
 }
 
 model InventoryItem {
@@ -52,6 +46,7 @@ enum InventoryCategory {
   MACHINES
   UTENSILS
   CLEANING
+  OTHER
 }
 
 model MenuItem {
@@ -109,6 +104,7 @@ enum OrderPaymentStatus {
 enum OrderPaymentType {
   CASH
   KHALTI
+  ESEWA
 }
 
 model Reservation {
@@ -190,4 +186,18 @@ model PasswordResetToken {
   expiresAt DateTime
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+model Staff {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @unique
+  position    String
+  department  String?
+  hireDate    DateTime @default(now())
+  salary      Float?
+  bio         String?
+  photo       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

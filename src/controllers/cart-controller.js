@@ -13,7 +13,7 @@ export const createCart = async (req, res) => {
     const newCart = await prisma.cart.create({
       data: {
         userId,
-        items,        // store items as JSON array
+        items,        
         totalAmount
       }
     })
@@ -71,7 +71,6 @@ export const updateCart = async (req, res) => {
       where: { id: Number(id) },
       data
     })
-
     successResponse(res, { message: "Cart updated successfully", data: updatedCart })
   } catch (error) {
     errorResponse(res, error.message)

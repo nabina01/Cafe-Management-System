@@ -43,14 +43,12 @@ export const getReports = async (req, res) => {
       ? reservations.reduce((sum, r) => sum + (r.numberOfPeople || 1), 0) / reservations.length
       : 0
 
-    // Combine all reports
+    // All three reports
     const reports = {
       sales: { totalSales, totalOrders, averageOrderValue, paymentMethods },
       inventory: { totalItems, lowStockItems, expiringItems, categoryBreakdown },
       reservations: { totalReservations, confirmed, cancelled, completed, averagePartySize }
     }
-
-    // Send response
     successResponse(res, { data: reports })
   } catch (error) {
     errorResponse(res, error.message)

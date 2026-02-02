@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken"
 import prisma from "../utils/prisma-client.js"
 
-const auth = async (req, res, next) => {
+ const auth = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer")) {
@@ -20,4 +20,4 @@ const auth = async (req, res, next) => {
     res.status(401).json({ message: "Invalid or expired token" });
   }
 };
-export default auth;
+export default auth ;

@@ -32,9 +32,9 @@ export const getDashboardStatus = async (req, res) => {
       prisma.reservation.count({
         where: { createdAt: { gte: startOfDay(today), lte: endOfDay(today) } }
       }),
-      prisma.inventoryItem.count({ where: { currentStock: { lt: 5 } } }), // fixed
+      prisma.inventoryItem.count({ where: { currentStock: { lt: 5 } } }), 
       prisma.menuItem.count(),
-      prisma.menuItem.count({ where: { available: true } }) // fixed
+      prisma.menuItem.count({ where: { available: true } }) 
     ]);
 
     successResponse(res, {
@@ -146,7 +146,7 @@ export const getDashboardCounts = async (req, res) => {
   try {
     const { fromDate, toDate } = req.query;
 
-    // Parse dates if provided, else default to all time
+    //show data if provieded otherwise default 
     const start = fromDate ? startOfDay(parseISO(fromDate)) : undefined;
     const end = toDate ? endOfDay(parseISO(toDate)) : undefined;
 
@@ -158,7 +158,7 @@ export const getDashboardCounts = async (req, res) => {
       totalRevenue,
       totalReservations
     ] = await Promise.all([
-      prisma.user.count(), // total customers
+      prisma.user.count(), 
       prisma.order.count({
         where: dateFilter ? { createdAt: dateFilter } : undefined
       }),
@@ -179,5 +179,75 @@ export const getDashboardCounts = async (req, res) => {
     });
   } catch (error) {
     errorResponse(res, error.message);
+  }
+};
+
+export const getProfitLoss = async (req, res) => {
+  try {
+    const today = new Date();
+    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
+    const endOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+    
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    
+    console.log("Fetching orders for today:", startOfToday, "to", endOfToday);
+    
+    // Today's data - only orders created today
+    const todayOrders = await prisma.order.findMany({
+      where: {
+        createdAt: {
+          gte: startOfToday,
+          lte: endOfToday
+        }
+      }
+    });
+
+    // This month's data
+    const monthOrders = await prisma.order.findMany({
+      where: {
+        createdAt: {
+          gte: startOfMonth
+        }
+      }
+    });
+
+    // Calculate today's profit (assuming 40% cost of goods)
+    const todayRevenue = todayOrders.reduce((sum, order) => {
+      const amount = typeof order.totalAmount === 'string' ? parseFloat(order.totalAmount) : Number(order.totalAmount);
+      return sum + (isNaN(amount) ? 0 : amount);
+    }, 0);
+    const todayCost = todayRevenue * 0.4; // 40% COGS
+    const todayProfit = todayRevenue - todayCost;
+
+    // Calculate month's profit
+    const monthRevenue = monthOrders.reduce((sum, order) => {
+      const amount = typeof order.totalAmount === 'string' ? parseFloat(order.totalAmount) : Number(order.totalAmount);
+      return sum + (isNaN(amount) ? 0 : amount);
+    }, 0);
+    const monthCost = monthRevenue * 0.4;
+    const monthProfit = monthRevenue - monthCost;
+
+    console.log("Today's orders count:", todayOrders.length);
+    console.log("Today's revenue:", todayRevenue);
+    console.log("Month's orders count:", monthOrders.length);
+    console.log("Month's revenue:", monthRevenue);
+
+    res.json({
+      today: {
+        revenue: todayRevenue,
+        cost: todayCost,
+        profit: todayProfit,
+        orders: todayOrders.length
+      },
+      month: {
+        revenue: monthRevenue,
+        cost: monthCost,
+        profit: monthProfit,
+        orders: monthOrders.length
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching profit/loss:", error);
+    res.status(500).json({ message: "Failed to fetch profit/loss data", error: error.message });
   }
 };

@@ -16,7 +16,6 @@ export const searchOrders = async (req, res) => {
         lte: endDate ? endOfDay(parseISO(endDate)) : undefined
       }
     }
-
     const orders = await prisma.order.findMany({ where, orderBy: { createdAt: "desc" } })
     successResponse(res, { data: orders })
   } catch (error) {

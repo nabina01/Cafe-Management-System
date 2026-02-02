@@ -16,15 +16,18 @@ export const createUser = async (req, res) => {
 
     const existing = await prisma.user.findUnique({ where: { email } })
     if (existing) return errorResponse(res, "Email already exists", 400)
-
-    // Only allow setting non-USER roles when the requester is an admin
     let finalRole = "USER"
     if (role) {
       const upper = String(role).toUpperCase()
+      
+      // Prevent ADMIN role assignment (only via seed.js)
+      if (upper === "ADMIN") {
+        return errorResponse(res, "ADMIN role can only be created via seed script", 403)
+      }
+      
       if (!ALLOWED_ROLES.includes(upper)) return errorResponse(res, "Invalid role specified", 400)
 
       if (upper !== "USER") {
-        // if request is not from an admin, forbid creating elevated roles
         if (!req.user || req.user.role !== "ADMIN") {
           return errorResponse(res, "Cannot assign elevated roles", 403)
         }
@@ -47,9 +50,17 @@ export const createUser = async (req, res) => {
 // Login user
 export const loginUser = async (req, res) => {
   try {
+    console.log("=== LOGIN REQUEST ===");
     const { email, password } = req.body;
-    if (!email || !password) return errorResponse(res, "Email and password are required", 400);
+    console.log("Email received:", email);
+    console.log("Password received:", password ? "***" : "MISSING");
+    
+    if (!email || !password) {
+      console.log("Missing email or password");
+      return errorResponse(res, "Email and password are required", 400);
+    }
 
+    console.log("Searching for user with email:", email);
     const user = await prisma.user.findUnique({
       where: { email },
       select: {
@@ -62,11 +73,23 @@ export const loginUser = async (req, res) => {
       }
     });
 
-    if (!user) return errorResponse(res, "Invalid email or password", 400);
+    if (!user) {
+      console.log("User not found with email:", email);
+      return errorResponse(res, "Invalid email or password", 400);
+    }
+    
+    console.log("User found:", user.email, "Role:", user.role);
 
+    console.log("Comparing passwords...");
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return errorResponse(res, "Invalid email or password", 400);
+    console.log("Password match:", isMatch);
+    
+    if (!isMatch) {
+      console.log("Password mismatch for user:", email);
+      return errorResponse(res, "Invalid email or password", 400);
+    }
 
+    console.log("Generating JWT token...");
     const accessToken = jwt.sign(
       { id: user.id, role: user.role },
       process.env.JWT_SECRET,
@@ -81,8 +104,12 @@ export const loginUser = async (req, res) => {
       createdAt: user.createdAt
     };
 
+    console.log("Login successful for:", email);
+    console.log("=== LOGIN SUCCESS ===");
     successResponse(res, { user: safeUser, accessToken }, "Login successful");
   } catch (error) {
+    console.error("=== LOGIN ERROR ===");
+    console.error("Error:", error);
     errorResponse(res, error.message);
   }
 };
@@ -119,11 +146,17 @@ export const requestPasswordReset = async (req, res) => {
   }
 }
 
-// Get all users (Admin only)
+// Get all users (Admin only) - excludes ADMIN users
 export const getAllUsers = async (req, res) => {
   try {
     const users = await prisma.user.findMany({
-      select: { id: true, name: true, email: true, phoneNumber: true, role: true, createdAt: true }
+      where: {
+        role: {
+          not: "ADMIN" // Exclude admin users (created via seed.js)
+        }
+      },
+      select: { id: true, name: true, email: true, phoneNumber: true, role: true, createdAt: true },
+      orderBy: { createdAt: 'desc' }
     })
     successResponse(res, users)
   } catch (error) {
@@ -146,10 +179,25 @@ export const getUserById = async (req, res) => {
   }
 }
 
-// Delete user (Admin only)
+// Delete user (Admin only) - prevents deletion of ADMIN users
 export const deleteUser = async (req, res) => {
   try {
     const { id } = req.params
+    
+    // Check if user is ADMIN before deleting
+    const user = await prisma.user.findUnique({
+      where: { id: Number(id) },
+      select: { role: true, email: true }
+    })
+    
+    if (!user) {
+      return errorResponse(res, "User not found", 404)
+    }
+    
+    if (user.role === "ADMIN") {
+      return errorResponse(res, "Cannot delete ADMIN users", 403)
+    }
+    
     await prisma.user.delete({ where: { id: Number(id) } })
     successResponse(res, {}, "User deleted successfully")
   } catch (error) {
@@ -188,8 +236,24 @@ export const updateUserRole = async (req, res) => {
 
     // Normalize + validate role
     const upper = String(role).toUpperCase();
+    
+    // Prevent ADMIN role assignment
+    if (upper === "ADMIN") {
+      return errorResponse(res, "ADMIN role can only be created via seed script", 403);
+    }
+    
     if (!ALLOWED_ROLES.includes(upper)) {
       return errorResponse(res, "Invalid role", 400);
+    }
+
+    // Prevent changing existing ADMIN users
+    const existingUser = await prisma.user.findUnique({
+      where: { id: Number(id) },
+      select: { role: true }
+    });
+    
+    if (existingUser?.role === "ADMIN") {
+      return errorResponse(res, "Cannot modify ADMIN users", 403);
     }
 
     // Update role

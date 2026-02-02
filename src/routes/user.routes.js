@@ -5,14 +5,18 @@ import { createUser, loginUser, updateUser, getUserById, getAllUsers, deleteUser
 
 const router = express.Router()
 
-// Public registration
-router.post("/register", createUser) // public register (no role assignment)
-router.post("/login", loginUser)     // login
+// any user can access these routes
+router.post("/register", createUser)
+router.post("/login", loginUser)     
 router.post("/logout", logout)
 router.post("/changepassword", changePassword)
+router.get("/me", auth, (req, res) => {
+  const { id, name, email, role, createdAt } = req.user;
+  res.json({ id, name, email, role, createdAt });
+});
 router.put("/:id", updateUser)
 
-// Admin-only user management
+// Only admin can access the routes 
 router.get("/", auth, isAdmin, getAllUsers)
 router.get("/:id", auth, isAdmin, getUserById)
 router.delete("/:id", auth, isAdmin, deleteUser)

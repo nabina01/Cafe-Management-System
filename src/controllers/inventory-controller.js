@@ -4,9 +4,9 @@ import { successResponse, errorResponse } from "../utils/json.js"
 //  Create inventory item
 export const createInventoryItem = async (req, res) => {
   try {
-    const { name, category, currentStock, quality, supplier, lastRestocked, expiryDate } = req.body;
+    const { name, category, currentStock, quality, supplier, minStock } = req.body;
 
-    if (!name || !category || currentStock === undefined || !quality) {
+    if (!name || !category || currentStock === undefined) {
       return res.status(400).json({ message: "Required fields are missing" });
     }
 
@@ -15,10 +15,9 @@ export const createInventoryItem = async (req, res) => {
         name,
         category,
         currentStock: Number(currentStock),
-        quality,
-        supplier,
-        lastRestocked: lastRestocked ? new Date(lastRestocked) : null,
-        expiryDate: expiryDate ? new Date(expiryDate) : null,
+        quality: quality || "Standard",
+        supplier: supplier || null,
+        minStock: minStock ? Number(minStock) : 5,
       },
     });
 
@@ -28,7 +27,7 @@ export const createInventoryItem = async (req, res) => {
   }
 };
 
-//  Get all inventory items (optional filter by category)
+//  Get all inventory items 
 export const getAllInventoryItems = async (req, res) => {
   try {
     const { category } = req.query;
@@ -87,11 +86,11 @@ export const updateInventoryItem = async (req, res) => {
   }
 };
 
-//  Update stock (add or subtract)
+//  Update stock of inventory item
 export const updateStock = async (req, res) => {
   try {
     const { id } = req.params;
-    const { quantity, type } = req.body; // type: "add" or "subtract"
+    const { quantity, type } = req.body; 
 
     const item = await prisma.inventoryItem.findUnique({
       where: { id: Number(id) },

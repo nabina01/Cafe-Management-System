@@ -1,13 +1,11 @@
 import prisma from "../utils/prisma-client.js"
 import { successResponse, errorResponse } from "../utils/json.js"
-import { v4 as uuidv4 } from 'uuid'; // For generating reservationId
+import { v4 as uuidv4 } from 'uuid'; //generate reservationId
 
 // Create reservation
 export const createReservation = async (req, res) => {
   try {
     const {customerName,email,phone,reservationTime,numberOfPeople,tableNumber,specialRequests,userId} = req.body
-
-    // Required fields
     if (!customerName || !reservationTime || !numberOfPeople) {
       return res.status(400).json({
         message: "customerName, reservationTime, and numberOfPeople are required"

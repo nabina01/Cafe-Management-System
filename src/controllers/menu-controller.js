@@ -9,11 +9,9 @@ export const createMenuItem = async (req, res) => {
     if (!name || !price) {
       return errorResponse(res, "Name and price are required", 400)
     }
-
     const newItem = await prisma.menuItem.create({
       data: { name, description, price, available, image },
     })
-
     successResponse(res, { message: "Menu item created successfully", data: newItem })
   } catch (error) {
     errorResponse(res, error.message)
@@ -24,10 +22,8 @@ export const createMenuItem = async (req, res) => {
 export const getAllMenuItems = async (req, res) => {
   try {
     const { available } = req.query;
-
     const filters = {};
     if (available !== undefined) filters.available = available === 'true';
-
     const menuItems = await prisma.menuItem.findMany({
       where: filters,
       select: {

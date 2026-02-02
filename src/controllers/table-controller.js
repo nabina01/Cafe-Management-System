@@ -10,8 +10,6 @@ export const getAvailableTables = async (req, res) => {
 
     const start = startOfHour(parseISO(`${date}T${time}`))
     const end = endOfHour(parseISO(`${date}T${time}`))
-
-    // Tables not reserved at that time
     const reservedTables = await prisma.reservation.findMany({
       where: { 
         OR: [

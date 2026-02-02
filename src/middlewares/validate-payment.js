@@ -12,8 +12,8 @@ const validatePayment = (req, res, next) => {
     return errorResponse(res, "Amount must be a positive number", 400)
   }
 
-  // allowed methods/types - adjust to your business rules
-  const allowedMethods = ["CASH", "CARD", "ONLINE", "MOBILE"]
+  // allowed methods for payment
+  const allowedMethods = ["CASH", "KHALTI"]
   const allowedTypes = ["FULL", "PARTIAL", "REFUND"]
 
   if (!allowedMethods.includes(String(method).toUpperCase())) {
@@ -32,7 +32,6 @@ const validatePayment = (req, res, next) => {
     return errorResponse(res, "transactionId is too long", 400)
   }
 
-  // normalize and canonicalize fields for controller
   req.body.amount = parsedAmount
   req.body.method = String(method).toUpperCase()
   req.body.type = String(type).toUpperCase()

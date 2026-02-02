@@ -1,27 +1,48 @@
-const  esewaRoutes = '8gBm/:&EnhH.1/q';
-// Success URL
-router.get('/verify', (req, res) => {
-    const token = req.query.data;
-    if (!token) 
-         return res.status(400).json({ result: 'Missing token' });
+import express from 'express';
+import crypto from 'crypto';
+const router = express.Router();
 
-    const decodedData = Buffer.from(token, 'base64').toString('utf-8');
-    const data = JSON.parse(decodedData);
-    const signedFields = data.signed_field_names.split(',');
-    const message = signedFields.map(f => `${f}=${data[f]}`).join(',');
-    const hmac = crypto.createHmac('sha256', secret).update(message).digest('base64');
-    if (hmac === data.signature) {
-        return res.send(`
-            <h1>✅ Payment Successful</h1>
-            <p>Transaction ID: ${data.transaction_uuid}</p>
-            <p>Status: ${data.status}</p>
-        `);
-    } else {
-        return res.status(403).json({ result: 'Invalid Signature' });
+const secret = '8gBm/:&EnhH.1/q';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+// Success URL
+router.get('/verify', async (req, res) => {
+    try {
+        const token = req.query.data;
+        if (!token) {
+            return res.redirect(`${FRONTEND_URL}/payment-success?status=error&message=Missing token`);
+        }
+        
+        const decodedData = Buffer.from(token, 'base64').toString('utf-8');
+        const data = JSON.parse(decodedData);
+        const signedFields = data.signed_field_names.split(',');
+        const message = signedFields.map(f => `${f}=${data[f]}`).join(',');
+        const hmac = crypto.createHmac('sha256', secret).update(message).digest('base64');
+        
+        if (hmac !== data.signature) {
+            return res.redirect(`${FRONTEND_URL}/payment-success?status=error&message=Invalid signature`);
+        }
+        
+        // Payment verified successfully
+        // Redirect to frontend success page with transaction details
+        const params = new URLSearchParams({
+            status: 'success',
+            method: 'esewa',
+            transaction_id: data.transaction_uuid,
+            amount: data.total_amount,
+            refId: data.ref_id || data.transaction_uuid
+        });
+        
+        return res.redirect(`${FRONTEND_URL}/payment-success?${params.toString()}`);
+    } catch (error) {
+        console.error('eSewa verification error:', error);
+        return res.redirect(`${FRONTEND_URL}/payment-success?status=error&message=Verification failed`);
     }
 });
+
 // Failure route
 router.get('/failure', (req, res) => {
-    res.send('<h1>❌ Payment Failed</h1><p>Please try again.</p>');
+    res.redirect(`${FRONTEND_URL}/payment-success?status=failed&message=Payment cancelled or failed`);
 });
-module.exports = router;
+
+export default router;

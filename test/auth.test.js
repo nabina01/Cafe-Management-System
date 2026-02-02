@@ -14,7 +14,7 @@ test.describe('Auth flows', () => {
   let userCreds = { name: 'User Tester', email: 'user@test.local', password: 'UserPass123!' }
 
   test.before(async () => {
-    // ensure test DB cleaned for these emails
+    // Clean up any existing test users
     await prisma.passwordResetToken.deleteMany({ where: { } })
     await prisma.refreshToken.deleteMany({ where: { } })
     await prisma.user.deleteMany({ where: { email: { in: [adminCreds.email, userCreds.email] } } })
@@ -55,7 +55,7 @@ test.describe('Auth flows', () => {
     const res = await request.post('/api/users/logout').send({ refreshToken })
     assert.equal(res.status, 200)
 
-    // token should be revoked in DB
+    // token should be revoked in Database
     const stored = await prisma.refreshToken.findUnique({ where: { token: refreshToken } })
     assert.ok(stored.revoked)
   })
