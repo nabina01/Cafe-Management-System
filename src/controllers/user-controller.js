@@ -6,7 +6,7 @@ import crypto from "crypto"
 import { addHours } from "date-fns"
 
 // Register new user
-const ALLOWED_ROLES = ["USER", "STAFF", "ADMIN"]
+const ALLOWED_ROLES = ["USER", "ADMIN"]
 
 export const createUser = async (req, res) => {
   try {
@@ -14,8 +14,22 @@ export const createUser = async (req, res) => {
 
     if (!name || !email || !password || !phoneNumber) return errorResponse(res, "All fields are required", 400)
 
+    // Validate phone number - must be exactly 10 digits
+    if (phoneNumber.length !== 10) {
+      return errorResponse(res, "Wrong number - Phone number must be exactly 10 digits", 400)
+    }
+
+    // Check if phone number contains only digits
+    if (!/^\d{10}$/.test(phoneNumber)) {
+      return errorResponse(res, "Wrong number - Phone number must contain only digits", 400)
+    }
+
     const existing = await prisma.user.findUnique({ where: { email } })
     if (existing) return errorResponse(res, "Email already exists", 400)
+
+    // Check if phone number already exists
+    const existingPhone = await prisma.user.findFirst({ where: { phoneNumber } })
+    if (existingPhone) return errorResponse(res, "Phone number already registered", 400)
     let finalRole = "USER"
     if (role) {
       const upper = String(role).toUpperCase()
@@ -179,12 +193,10 @@ export const getUserById = async (req, res) => {
   }
 }
 
-// Delete user (Admin only) - prevents deletion of ADMIN users
+// Delete user 
 export const deleteUser = async (req, res) => {
   try {
     const { id } = req.params
-    
-    // Check if user is ADMIN before deleting
     const user = await prisma.user.findUnique({
       where: { id: Number(id) },
       select: { role: true, email: true }
@@ -231,13 +243,9 @@ export const updateUserRole = async (req, res) => {
     const { id } = req.params;
     const { role } = req.body;
 
-    // Check role is provided
-    if (!role) return errorResponse(res, "Role is required", 400);
-
-    // Normalize + validate role
-    const upper = String(role).toUpperCase();
     
-    // Prevent ADMIN role assignment
+    if (!role) return errorResponse(res, "Role is required", 400);
+    const upper = String(role).toUpperCase();
     if (upper === "ADMIN") {
       return errorResponse(res, "ADMIN role can only be created via seed script", 403);
     }
@@ -245,8 +253,6 @@ export const updateUserRole = async (req, res) => {
     if (!ALLOWED_ROLES.includes(upper)) {
       return errorResponse(res, "Invalid role", 400);
     }
-
-    // Prevent changing existing ADMIN users
     const existingUser = await prisma.user.findUnique({
       where: { id: Number(id) },
       select: { role: true }
@@ -256,7 +262,6 @@ export const updateUserRole = async (req, res) => {
       return errorResponse(res, "Cannot modify ADMIN users", 403);
     }
 
-    // Update role
     const updated = await prisma.user.update({
       where: { id: Number(id) },
       data: { role: upper },
@@ -287,7 +292,7 @@ export const changePassword = async (req, res) => {
     const isSameAsOld = await bcrypt.compare(newPassword, user.password);
     if (isSameAsOld) return errorResponse(res, "New password cannot be same as old password", 400);
 
-    // ✅ Hash and update only password field
+    //  Hash and update only password field
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     const updatedUser = await prisma.user.update({

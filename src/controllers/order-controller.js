@@ -163,7 +163,6 @@ function getInventoryItems(menuItemName) {
     }
   }
   
-  // Default: just cups
   console.log(`No mapping found for: ${menuItemName}, using default cups`)
   return [{ name: 'Cups', quantity: 1 }]
 }

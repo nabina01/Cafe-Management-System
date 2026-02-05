@@ -24,7 +24,6 @@ model User {
 enum Role {
   ADMIN
   USER
-  STAFF
 }
 
 model InventoryItem {
@@ -188,16 +187,4 @@ model PasswordResetToken {
   createdAt DateTime @default(now())
 }
 
-model Staff {
-  id          Int      @id @default(autoincrement())
-  userId      Int      @unique
-  position    String
-  department  String?
-  hireDate    DateTime @default(now())
-  salary      Float?
-  bio         String?
-  photo       String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
+

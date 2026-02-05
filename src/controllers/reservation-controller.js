@@ -1,6 +1,6 @@
 import prisma from "../utils/prisma-client.js"
 import { successResponse, errorResponse } from "../utils/json.js"
-import { v4 as uuidv4 } from 'uuid'; //generate reservationId
+import { v4 as uuidv4 } from 'uuid'; //generate reservationid
 
 // Create reservation
 export const createReservation = async (req, res) => {

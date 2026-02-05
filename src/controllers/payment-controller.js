@@ -15,7 +15,6 @@ export const initiatePayment = async (req, res) => {
 console.log("Initiate Payment Request Body:", req.body);
 
   try {
-    //  Cash Payment
     if (paymentGateway === "cash") {
       const paymentData = {
         amount,

@@ -2,7 +2,7 @@ import express from 'express';
 import crypto from 'crypto';
 const router = express.Router();
 
-const secret = '8gBm/:&EnhH.1/q';
+const secret = process.env.ESEWA_SECRET || '8gBm/:&EnhH.1/q';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
 // Success URL
